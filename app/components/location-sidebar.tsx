@@ -1,27 +1,22 @@
 "use client"
-
 import { Search } from 'lucide-react'
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useState } from "react"
-import { locations } from "./map"
+import { useLocations } from "@/hooks/useLocations"
 import { useMap } from "./map-context"
+import type { Location } from "@/types/Location"
 
 export default function LocationSidebar() {
   const [search, setSearch] = useState("")
-  const [open, setOpen] = useState(false) // Update 1: Added state for controlling the sheet
+  const [open, setOpen] = useState(false)
   const { mapRef } = useMap()
+  const { locations, loading } = useLocations()
 
   const filteredLocations = locations.filter(
-    (location) =>
+    (location: Location) =>
       location.name.toLowerCase().includes(search.toLowerCase()) ||
       location.address.toLowerCase().includes(search.toLowerCase())
   )
@@ -30,11 +25,13 @@ export default function LocationSidebar() {
     mapRef.current?.flyTo(coordinates, 16, {
       duration: 1.5,
     })
-    setOpen(false) // Update 3: Added setOpen(false) to close the sheet after clicking a location
+    setOpen(false)
   }
 
+  if (loading) return null
+
   return (
-    <Sheet open={open} onOpenChange={setOpen}> {/* Update 2: Updated Sheet component to use the state */}
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button
           variant="outline"
@@ -64,7 +61,7 @@ export default function LocationSidebar() {
             {filteredLocations.map((location) => (
               <button
                 key={location.id}
-                onClick={() => handleLocationClick(location.coordinates as [number, number])}
+                onClick={() => handleLocationClick(location.coordinates)}
                 className="group w-full space-y-1.5 rounded-lg border border-white/5 bg-white/5 p-4 text-left transition-colors hover:border-[#95ff00]/20 hover:bg-white/10"
               >
                 <h3 className="font-light tracking-wide text-white">{location.name}</h3>
@@ -87,4 +84,3 @@ export default function LocationSidebar() {
     </Sheet>
   )
 }
-
