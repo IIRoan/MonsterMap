@@ -12,27 +12,40 @@ export async function GET() {
   try {
     const result = await client.query({
       query: `
-        SELECT 
-          l.location_id,
-          l.name,
-          l.address,
-          l.latitude,
-          l.longitude,
-          ls.variants
-        FROM locations l
-        LEFT JOIN location_submissions ls 
-        ON l.location_id = ls.location_id
-        ORDER BY ls.submission_time DESC
+        WITH variant_arrays AS (
+          SELECT
+            l.name,
+            l.address,
+            l.latitude,
+            l.longitude,
+            groupArray(DISTINCT lv.variant_name) as variants
+          FROM locations l
+          LEFT JOIN location_variants lv ON l.location_id = lv.location_id
+          GROUP BY 
+            l.name,
+            l.address,
+            l.latitude,
+            l.longitude
+        )
+        SELECT
+          generateUUIDv4() as location_id,
+          name,
+          address,
+          latitude,
+          longitude,
+          variants
+        FROM variant_arrays
+        ORDER BY name ASC
       `,
       format: 'JSONEachRow'
     });
-
+    
     const data = await result.json() as LocationResponse[];
     return NextResponse.json(data);
   } catch (error) {
     console.error('ClickHouse query error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch locations' }, 
+      { error: 'Failed to fetch locations' },
       { status: 500 }
     );
   }

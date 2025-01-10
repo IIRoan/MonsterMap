@@ -14,33 +14,35 @@ export default function LocationSidebar() {
   const [open, setOpen] = useState(false)
   const { mapRef } = useMap()
   const { locations, loading } = useLocations()
-
+  
   const filteredLocations = locations.filter(
     (location: Location) =>
       location.name.toLowerCase().includes(search.toLowerCase()) ||
       location.address.toLowerCase().includes(search.toLowerCase())
   )
-
+  
   const handleLocationClick = (coordinates: [number, number]) => {
     mapRef.current?.flyTo(coordinates, 16, {
       duration: 1.5,
     })
     setOpen(false)
   }
-
+  
   if (loading) return null
-
+  
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>
-        <Button
-          variant="outline"
-          size="icon"
-          className="absolute left-6 top-6 z-[1000] border-white/10 bg-black/90 backdrop-blur-xl hover:border-[#95ff00]/20 hover:bg-black/95"
-        >
-          <Search className="h-4 w-4 text-[#95ff00]" />
-        </Button>
-      </SheetTrigger>
+      {!open && (
+        <SheetTrigger asChild>
+          <Button
+            variant="outline"
+            size="icon"
+            className="absolute left-6 top-6 z-[1000] border-white/10 bg-black/90 backdrop-blur-xl hover:border-[#95ff00]/20 hover:bg-black/95"
+          >
+            <Search className="h-4 w-4 text-[#95ff00]" />
+          </Button>
+        </SheetTrigger>
+      )}
       <SheetContent
         side="left"
         className="w-[300px] border-r border-[#95ff00]/10 bg-black/95 p-0 backdrop-blur-xl"
