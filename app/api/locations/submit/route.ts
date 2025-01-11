@@ -1,4 +1,3 @@
-export const runtime = 'edge'
 import { createClient } from '@clickhouse/client';
 import { NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
