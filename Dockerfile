@@ -35,14 +35,19 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Copy built application
+# Copy necessary files
 COPY --from=builder /app/public ./public
+# Copy standalone directory
 COPY --from=builder /app/.next/standalone ./
+# Copy static files
 COPY --from=builder /app/.next/static ./.next/static
 
 EXPOSE 3000
 
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
+
+# Ensure we have the required node_modules
+COPY --from=builder /app/node_modules ./node_modules
 
 CMD ["node", "server.js"]
