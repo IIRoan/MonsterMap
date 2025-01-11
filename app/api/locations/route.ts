@@ -14,6 +14,7 @@ export async function GET() {
       query: `
         WITH variant_arrays AS (
           SELECT
+            l.location_id,
             l.name,
             l.address,
             l.latitude,
@@ -21,14 +22,15 @@ export async function GET() {
             groupArray(DISTINCT lv.variant_name) as variants
           FROM locations l
           LEFT JOIN location_variants lv ON l.location_id = lv.location_id
-          GROUP BY 
+          GROUP BY
+            l.location_id,
             l.name,
             l.address,
             l.latitude,
             l.longitude
         )
         SELECT
-          generateUUIDv4() as location_id,
+          location_id,
           name,
           address,
           latitude,
@@ -39,7 +41,7 @@ export async function GET() {
       `,
       format: 'JSONEachRow'
     });
-    
+   
     const data = await result.json() as LocationResponse[];
     return NextResponse.json(data);
   } catch (error) {
