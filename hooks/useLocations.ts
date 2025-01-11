@@ -9,7 +9,12 @@ export function useLocations() {
   const fetchLocations = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/locations');
+      const response = await fetch('/api/locations', {
+        cache: 'no-store',  // Disable caching
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
