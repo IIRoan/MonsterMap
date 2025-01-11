@@ -5,9 +5,9 @@ FROM node:18-slim AS base
 FROM base AS deps
 WORKDIR /app
 
-# Install only production dependencies
+# Install ALL dependencies (including dev dependencies)
 COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+RUN npm ci
 
 # Rebuild the source code only when needed
 FROM base AS builder
@@ -40,7 +40,10 @@ ENV NODE_ENV=production \
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/node_modules ./node_modules
+
+# Only copy production dependencies
+COPY --from=builder /app/package.json /app/package-lock.json ./
+RUN ["npm", "ci", "--only=production"]
 
 EXPOSE 3000
 
