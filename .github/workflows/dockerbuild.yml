@@ -10,28 +10,45 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
     - uses: actions/checkout@v4
 
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
 
-    - name: Build Docker image
-      run: |
-        docker compose build \
-          --build-arg CLICKHOUSE_HOST=${{ secrets.CLICKHOUSE_HOST }} \
-          --build-arg CLICKHOUSE_USER=${{ secrets.CLICKHOUSE_USER }} \
-          --build-arg CLICKHOUSE_PASSWORD=${{ secrets.CLICKHOUSE_PASSWORD }} \
-          --build-arg GEOAPIFY_API_KEY=${{ secrets.GEOAPIFY_API_KEY }}
-
-    - name: Export Docker image
-      run: |
-        docker save monstermap-app:latest > monstermap-app.tar
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
+    - name: Extract metadata for Docker
+      id: meta
+      uses: docker/metadata-action@v5
       with:
-        name: docker-image
-        path: monstermap-app.tar
-        retention-days: 5
+        images: ghcr.io/${{ github.repository }}
+        tags: |
+          type=sha,format=long
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=raw,value=latest,enable={{is_default_branch}}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        build-args: |
+          CLICKHOUSE_HOST=${{ secrets.CLICKHOUSE_HOST }}
+          CLICKHOUSE_USER=${{ secrets.CLICKHOUSE_USER }}
+          CLICKHOUSE_PASSWORD=${{ secrets.CLICKHOUSE_PASSWORD }}
+          GEOAPIFY_API_KEY=${{ secrets.GEOAPIFY_API_KEY }}
