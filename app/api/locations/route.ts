@@ -1,3 +1,4 @@
+export const runtime = 'edge'
 import { createClient } from '@clickhouse/client';
 import { NextResponse } from 'next/server';
 import type { LocationResponse } from '@/types/Location';
