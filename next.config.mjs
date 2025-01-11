@@ -1,10 +1,3 @@
-let userConfig = undefined
-try {
-  userConfig = await import('./v0-user-next.config')
-} catch (e) {
-  // ignore error
-}
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
@@ -23,6 +16,20 @@ const nextConfig = {
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
+  // Add headers configuration
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0, must-revalidate'
+          }
+        ],
+      }
+    ];
+  }
 }
 
 function mergeConfig(nextConfig, userConfig) {
@@ -44,6 +51,12 @@ function mergeConfig(nextConfig, userConfig) {
   }
 }
 
-mergeConfig(nextConfig, userConfig)
+let userConfig = undefined
+try {
+  userConfig = await import('./v0-user-next.config')
+} catch (e) {
+  // ignore error
+}
 
+mergeConfig(nextConfig, userConfig)
 export default nextConfig

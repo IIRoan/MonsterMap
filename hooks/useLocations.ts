@@ -10,18 +10,14 @@ export function useLocations() {
     try {
       setLoading(true);
       const response = await fetch('/api/locations', {
-        cache: 'no-store',  // Disable caching
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
+        cache: 'no-store'
       });
-      
+     
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-
       const data = await response.json() as LocationResponse[];
-      
+     
       const transformedLocations: Location[] = data.map(location => ({
         id: location.location_id,
         name: location.name,
@@ -29,7 +25,6 @@ export function useLocations() {
         coordinates: [location.latitude, location.longitude],
         variants: location.variants || []
       }));
-
       setLocations(transformedLocations);
       setError(null);
     } catch (err) {

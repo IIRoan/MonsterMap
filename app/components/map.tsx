@@ -27,13 +27,11 @@ const Map = () => {
         setUserLocation([data.latitude, data.longitude]);
       })
       .catch(() => {
-        // Fallback if IP geolocation fails
         if (navigator.geolocation) {
           navigator.geolocation.getCurrentPosition(
             position => {
               setUserLocation([position.coords.latitude, position.coords.longitude]);
             },
-            // If browser geolocation fails, use default location
             () => setUserLocation([52.3676, 4.9041])
           );
         }
@@ -141,8 +139,6 @@ const Map = () => {
           .leaflet-control-attribution a:hover {
             color: #d1d5db !important; 
           }
-
-
         `}</style>
         <MapContainer
           center={center}
