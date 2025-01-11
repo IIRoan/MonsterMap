@@ -15,16 +15,6 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set environment variables
-ARG CLICKHOUSE_HOST
-ARG CLICKHOUSE_USER
-ARG CLICKHOUSE_PASSWORD
-ARG GEOAPIFY_API_KEY
-ENV CLICKHOUSE_HOST=$CLICKHOUSE_HOST \
-    CLICKHOUSE_USER=$CLICKHOUSE_USER \
-    CLICKHOUSE_PASSWORD=$CLICKHOUSE_PASSWORD \
-    GEOAPIFY_API_KEY=$GEOAPIFY_API_KEY
-
 # Build application with output compression
 RUN npm run build
 
