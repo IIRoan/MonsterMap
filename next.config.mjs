@@ -7,6 +7,7 @@ try {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -17,19 +18,17 @@ const nextConfig = {
     unoptimized: true,
   },
   experimental: {
+    outputFileTracingRoot: undefined,
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,
     parallelServerCompiles: true,
   },
 }
 
-mergeConfig(nextConfig, userConfig)
-
 function mergeConfig(nextConfig, userConfig) {
   if (!userConfig) {
     return
   }
-
   for (const key in userConfig) {
     if (
       typeof nextConfig[key] === 'object' &&
@@ -44,5 +43,7 @@ function mergeConfig(nextConfig, userConfig) {
     }
   }
 }
+
+mergeConfig(nextConfig, userConfig)
 
 export default nextConfig
