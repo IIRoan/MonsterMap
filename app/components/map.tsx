@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from "react"
 import dynamic from "next/dynamic"
+import { useRouter } from "next/navigation"
 import type { Location } from "@/types/Location"
 import { useMap } from "./map-context"
 import { useLocations } from "@/hooks/useLocations"
 import { Button } from "@/components/ui/button"
+import { Plus } from "lucide-react"
 import EditLocationModal from "./editmodal"
 
 const Map = () => {
+  const router = useRouter();
   const { locations, loading, error, refetch } = useLocations();
   const [mounted, setMounted] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -44,7 +47,7 @@ const Map = () => {
     const center = userLocation;
 
     const svgIcon = `
-      <svg width="36" height="36" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
         <path fill-rule="evenodd" clip-rule="evenodd" d="M3.37892 10.2236L8 16L12.6211 10.2236C13.5137 9.10788 14 7.72154 14 6.29266V6C14 2.68629 11.3137 0 8 0C4.68629 0 2 2.68629 2 6V6.29266C2 7.72154 2.4863 9.10788 3.37892 10.2236ZM8 8C9.10457 8 10 7.10457 10 6C10 4.89543 9.10457 4 8 4C6.89543 4 6 4.89543 6 6C6 7.10457 6.89543 8 8 8Z" fill="#95ff00"/>
       </svg>
     `;
@@ -54,15 +57,23 @@ const Map = () => {
     require("leaflet/dist/leaflet.css");
 
     const customIcon = L.divIcon({
-      html: `<div style="filter: drop-shadow(0 0 6px rgba(149, 255, 0, 0.5));">${svgIcon}</div>`,
+      html: `<div>${svgIcon}</div>`,
       className: 'custom-marker',
-      iconSize: [36, 36],
+      iconSize: [28, 28],
       iconAnchor: [18, 36],
       popupAnchor: [0, -36],
     });
 
     return (
       <div className="h-screen w-full">
+        <Button
+          variant="outline"
+          className="absolute right-6 top-6 z-[1000] border-white/10 bg-black/90 backdrop-blur-xl hover:border-[#95ff00]/20 hover:bg-black/95 text-[#95ff00]"
+          onClick={() => router.push('/submit')}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          New Location
+        </Button>
         <style jsx global>{`
           .custom-marker {
             background: none;
@@ -110,6 +121,28 @@ const Map = () => {
             background-size: 16px 16px;
             opacity: 0.1;
           }
+
+          .leaflet-control-attribution {
+            background: rgba(0, 0, 0, 0.95) !important;
+            backdrop-filter: blur(8px);
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+          }
+
+          .leaflet-control-attribution,
+          .leaflet-control-attribution a {
+            color: #9ca3af !important; 
+            opacity: 1;
+            transition: all 0.2s ease;
+            text-decoration: none !important;
+          }
+
+          .leaflet-control-attribution a:hover {
+            color: #d1d5db !important; 
+          }
+
+
         `}</style>
         <MapContainer
           center={center}
@@ -146,7 +179,7 @@ const Map = () => {
                     ))}
                   </div>
                   <div className="mt-4">
-                    <Button 
+                    <Button
                       onClick={() => {
                         setSelectedLocation(location);
                         setEditModalOpen(true);
@@ -172,7 +205,7 @@ const Map = () => {
   return (
     <>
       <MapWithNoSSR />
-      <EditLocationModal 
+      <EditLocationModal
         location={selectedLocation}
         isOpen={editModalOpen}
         onClose={() => {
