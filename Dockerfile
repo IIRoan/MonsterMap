@@ -1,11 +1,11 @@
-# Base Node image
-FROM node:18-alpine AS base
+# Use a more minimal base image
+FROM node:18-slim AS base
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 
-# Install dependencies based on the package.json
+# Install ALL dependencies (including dev dependencies)
 COPY package.json package-lock.json* ./
 RUN npm ci
 
@@ -20,34 +20,35 @@ ARG CLICKHOUSE_HOST
 ARG CLICKHOUSE_USER
 ARG CLICKHOUSE_PASSWORD
 ARG GEOAPIFY_API_KEY
+ENV CLICKHOUSE_HOST=$CLICKHOUSE_HOST \
+    CLICKHOUSE_USER=$CLICKHOUSE_USER \
+    CLICKHOUSE_PASSWORD=$CLICKHOUSE_PASSWORD \
+    GEOAPIFY_API_KEY=$GEOAPIFY_API_KEY
 
-ENV CLICKHOUSE_HOST=$CLICKHOUSE_HOST
-ENV CLICKHOUSE_USER=$CLICKHOUSE_USER
-ENV CLICKHOUSE_PASSWORD=$CLICKHOUSE_PASSWORD
-ENV GEOAPIFY_API_KEY=$GEOAPIFY_API_KEY
-
-# Build application
+# Build application with output compression
 RUN npm run build
 
-# Production image, copy all files and run next
-FROM base AS runner
+# Create a new stage for production dependencies
+FROM base AS prod-deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci --only=production
+
+# Production image, using distroless for minimal footprint
+FROM gcr.io/distroless/nodejs18-debian11 AS runner
 WORKDIR /app
 
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOSTNAME="0.0.0.0"
 
 # Copy necessary files
 COPY --from=builder /app/public ./public
-# Copy standalone directory
 COPY --from=builder /app/.next/standalone ./
-# Copy static files
 COPY --from=builder /app/.next/static ./.next/static
+# Copy production node_modules
+COPY --from=prod-deps /app/node_modules ./node_modules
 
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-# Ensure we have the required node_modules
-COPY --from=builder /app/node_modules ./node_modules
-
-CMD ["node", "server.js"]
+CMD ["server.js"]
