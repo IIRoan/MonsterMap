@@ -1,0 +1,36 @@
+name: Build and Upload Docker Image
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      run: |
+        docker compose build \
+          --build-arg CLICKHOUSE_HOST=${{ secrets.CLICKHOUSE_HOST }} \
+          --build-arg CLICKHOUSE_USER=${{ secrets.CLICKHOUSE_USER }} \
+          --build-arg CLICKHOUSE_PASSWORD=${{ secrets.CLICKHOUSE_PASSWORD }} \
+          --build-arg GEOAPIFY_API_KEY=${{ secrets.GEOAPIFY_API_KEY }}
+
+    - name: Export Docker image
+      run: |
+        docker save monstermap-app:latest > monstermap-app.tar
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: docker-image
+        path: monstermap-app.tar
+        retention-days: 5

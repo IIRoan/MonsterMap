@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      args:
+        CLICKHOUSE_HOST: ${CLICKHOUSE_HOST}
+        CLICKHOUSE_USER: ${CLICKHOUSE_USER}
+        CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+        GEOAPIFY_API_KEY: ${GEOAPIFY_API_KEY}
+    ports:
+      - "3000:3000"
+    environment:
+      - CLICKHOUSE_HOST=${CLICKHOUSE_HOST}
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+      - GEOAPIFY_API_KEY=${GEOAPIFY_API_KEY}
+    restart: unless-stopped
