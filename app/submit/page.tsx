@@ -8,6 +8,7 @@ import { toast } from "@/components/ui/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import AddressInput from "@/app/components/addressinput";
 import DOMPurify from "dompurify";
+import { ArrowLeft } from "lucide-react";
 
 interface LocationSubmission {
   name: string;
@@ -242,10 +243,18 @@ export default function SubmitLocation() {
       setShowVariantSuggestions(true);
     }
   };
-
-  return (
+return (
     <div className="min-h-screen bg-black bg-[radial-gradient(rgba(149,255,0,0.1)_1px,transparent_1px)] [background-size:20px_20px]">
-      <div className="container mx-auto max-w-2xl py-12">
+      <div className="container mx-auto max-w-2xl py-12 relative">
+        <Button
+          onClick={() => router.push('/')}
+          variant="ghost"
+          className="absolute left-4 top-4 text-white/70 hover:text-white hover:bg-white/10"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
+        </Button>
+        
         <AnimatePresence>
           {!submitted ? (
             <motion.div
