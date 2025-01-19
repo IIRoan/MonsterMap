@@ -25,7 +25,7 @@ interface ValidationErrors {
   general?: string;
 }
 
-const SUBMISSION_COOLDOWN = 12000; // 20 seconds cooldown between submissions
+const SUBMISSION_COOLDOWN = 12000;
 const MAX_SUBMISSIONS_PER_DAY = 10;
 const MAX_NAME_LENGTH = 100;
 const MAX_ADDRESS_LENGTH = 200;
@@ -52,7 +52,6 @@ export default function SubmitLocation() {
   const [submissionToken, setSubmissionToken] = useState<string>("");
 
   useEffect(() => {
-    // Load submission history from localStorage
     const storedLastSubmission = localStorage.getItem("lastSubmissionTime");
     const storedDailyCount = localStorage.getItem("dailySubmissionCount");
     const lastDate = localStorage.getItem("lastSubmissionDate");
@@ -61,7 +60,6 @@ export default function SubmitLocation() {
       setLastSubmissionTime(parseInt(storedLastSubmission));
     }
 
-    // Reset daily count if it's a new day
     const today = new Date().toDateString();
     if (lastDate !== today) {
       localStorage.setItem("dailySubmissionCount", "0");
@@ -71,7 +69,6 @@ export default function SubmitLocation() {
       setDailySubmissionCount(parseInt(storedDailyCount));
     }
 
-    // Get CSRF token
     fetchSubmissionToken();
   }, []);
 
@@ -93,7 +90,6 @@ export default function SubmitLocation() {
     const newErrors: ValidationErrors = {};
     let isValid = true;
 
-    // Check submission rate limits
     const currentTime = Date.now();
     if (currentTime - lastSubmissionTime < SUBMISSION_COOLDOWN) {
       newErrors.general = `Please wait ${Math.ceil(
@@ -108,7 +104,6 @@ export default function SubmitLocation() {
       isValid = false;
     }
 
-    // Validate name
     const sanitizedName = sanitizeInput(formData.name);
     if (!sanitizedName) {
       newErrors.name = "Store name is required";
@@ -118,7 +113,6 @@ export default function SubmitLocation() {
       isValid = false;
     }
 
-    // Validate address
     const sanitizedAddress = sanitizeInput(formData.address);
     if (!sanitizedAddress) {
       newErrors.address = "Address is required";
@@ -128,25 +122,14 @@ export default function SubmitLocation() {
       isValid = false;
     }
 
-    // Validate coordinates
     if (formData.latitude === 0 && formData.longitude === 0) {
-      newErrors.coordinates = "Valid coordinates are required";
+      newErrors.coordinates = "Please select a valid address from the suggestions";
       isValid = false;
     }
 
-    // Validate coordinate ranges
     if (
-      formData.latitude < -90 ||
-      formData.latitude > 90 ||
-      formData.longitude < -180 ||
-      formData.longitude > 180
+      formData.variants.length > MAX_VARIANTS
     ) {
-      newErrors.coordinates = "Invalid coordinate values";
-      isValid = false;
-    }
-
-    // Validate variants
-    if (formData.variants.length > MAX_VARIANTS) {
       newErrors.general = `Maximum ${MAX_VARIANTS} variants allowed`;
       isValid = false;
     }
@@ -205,7 +188,6 @@ export default function SubmitLocation() {
     setLoading(true);
 
     try {
-      // Sanitize all inputs before submission
       const sanitizedData = {
         ...formData,
         name: sanitizeInput(formData.name),
@@ -252,12 +234,11 @@ export default function SubmitLocation() {
     return response.json();
   };
 
-  // Debounce variant input to prevent API abuse
   const debouncedFetchVariants = async (input: string) => {
     if (variantInput !== input) {
       setVariantInput(input);
       const suggestions = await fetchVariants(input);
-      setVariantSuggestions(suggestions.slice(0, 10)); // Limit suggestions
+      setVariantSuggestions(suggestions.slice(0, 10));
       setShowVariantSuggestions(true);
     }
   };
@@ -333,79 +314,15 @@ export default function SubmitLocation() {
                           }
                         }}
                         className={
-                          errors.address
+                          errors.address || errors.coordinates
                             ? "border-red-500 ring-1 ring-red-500"
                             : ""
                         }
                       />
-                      {errors.address && (
-                        <p className="text-red-500 text-sm">{errors.address}</p>
-                      )}
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-sm text-white/70">
-                          Latitude
-                        </label>
-                        <Input
-                          required
-                          type="number"
-                          step="any"
-                          value={formData.latitude || ""}
-                          onChange={(e) => {
-                            setFormData((prev) => ({
-                              ...prev,
-                              latitude: parseFloat(e.target.value),
-                            }));
-                            if (errors.coordinates) {
-                              setErrors((prev) => ({
-                                ...prev,
-                                coordinates: undefined,
-                              }));
-                            }
-                          }}
-                          className={`bg-white/5 border-0 focus-visible:ring-1 focus-visible:ring-[#95ff00]/50 focus-visible:ring-offset-0 ${
-                            errors.coordinates
-                              ? "border-red-500 ring-1 ring-red-500"
-                              : ""
-                          }`}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm text-white/70">
-                          Longitude
-                        </label>
-                        <Input
-                          required
-                          type="number"
-                          step="any"
-                          value={formData.longitude || ""}
-                          onChange={(e) => {
-                            setFormData((prev) => ({
-                              ...prev,
-                              longitude: parseFloat(e.target.value),
-                            }));
-                            if (errors.coordinates) {
-                              setErrors((prev) => ({
-                                ...prev,
-                                coordinates: undefined,
-                              }));
-                            }
-                          }}
-                          className={`bg-white/5 border-0 focus-visible:ring-1 focus-visible:ring-[#95ff00]/50 focus-visible:ring-offset-0 ${
-                            errors.coordinates
-                              ? "border-red-500 ring-1 ring-red-500"
-                              : ""
-                          }`}
-                        />
-                      </div>
-                      {errors.coordinates && (
-                        <div className="col-span-2">
-                          <p className="text-red-500 text-sm">
-                            {errors.coordinates}
-                          </p>
-                        </div>
+                      {(errors.address || errors.coordinates) && (
+                        <p className="text-red-500 text-sm">
+                          {errors.address || errors.coordinates}
+                        </p>
                       )}
                     </div>
 
