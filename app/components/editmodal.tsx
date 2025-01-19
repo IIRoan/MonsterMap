@@ -23,6 +23,8 @@ export default function EditLocationModal({
   const [formData, setFormData] = useState<Partial<Location>>({});
   const [loading, setLoading] = useState(false);
   const [variantInput, setVariantInput] = useState("");
+  const [variantSuggestions, setVariantSuggestions] = useState<string[]>([]);
+  const [showVariantSuggestions, setShowVariantSuggestions] = useState(false);
 
   useEffect(() => {
     if (location) {
@@ -66,14 +68,30 @@ export default function EditLocationModal({
     }
   };
 
-  const handleAddVariant = () => {
-    if (variantInput && !formData.variants?.includes(variantInput)) {
+  const fetchVariants = async (input: string) => {
+    if (input.length < 2) return [];
+    const response = await fetch(`/api/variants/search?q=${encodeURIComponent(input)}`);
+    return response.json();
+  };
+
+  const debouncedFetchVariants = async (input: string) => {
+    if (variantInput !== input) {
+      setVariantInput(input);
+      const suggestions = await fetchVariants(input);
+      setVariantSuggestions(suggestions.slice(0, 10));
+      setShowVariantSuggestions(true);
+    }
+  };
+
+  const handleVariantSelect = (variant: string) => {
+    if (variant && !formData.variants?.includes(variant)) {
       setFormData(prev => ({
         ...prev,
-        variants: [...(prev.variants || []), variantInput]
+        variants: [...(prev.variants || []), variant]
       }));
-      setVariantInput("");
     }
+    setVariantInput("");
+    setShowVariantSuggestions(false);
   };
 
   const removeVariant = (variant: string) => {
@@ -117,51 +135,42 @@ export default function EditLocationModal({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm text-white/70">Latitude</label>
-                  <Input
-                    type="number"
-                    step="any"
-                    value={formData.coordinates?.[0] || ''}
-                    onChange={e => setFormData(prev => ({
-                      ...prev,
-                      coordinates: [parseFloat(e.target.value), prev.coordinates?.[1] || 0]
-                    }))}
-                    className="bg-white/5 border-0 focus-visible:ring-1 focus-visible:ring-[#95ff00]/50"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm text-white/70">Longitude</label>
-                  <Input
-                    type="number"
-                    step="any"
-                    value={formData.coordinates?.[1] || ''}
-                    onChange={e => setFormData(prev => ({
-                      ...prev,
-                      coordinates: [prev.coordinates?.[0] || 0, parseFloat(e.target.value)]
-                    }))}
-                    className="bg-white/5 border-0 focus-visible:ring-1 focus-visible:ring-[#95ff00]/50"
-                  />
-                </div>
-              </div>
-
               <div className="space-y-2">
                 <label className="text-sm text-white/70">Variants</label>
-                <div className="flex gap-2">
-                  <Input
-                    value={variantInput}
-                    onChange={e => setVariantInput(e.target.value)}
-                    className="bg-white/5 border-0 focus-visible:ring-1 focus-visible:ring-[#95ff00]/50"
-                    placeholder="Add variant..."
-                  />
-                  <Button
-                    type="button"
-                    onClick={handleAddVariant}
-                    className="bg-[#95ff00]/10 hover:bg-[#95ff00]/20 text-[#95ff00] border-0"
-                  >
-                    Add
-                  </Button>
+                <div className="relative">
+                  <div className="flex gap-2">
+                    <Input
+                      value={variantInput}
+                      onChange={async (e) => {
+                        await debouncedFetchVariants(e.target.value);
+                      }}
+                      onFocus={() => setShowVariantSuggestions(true)}
+                      className="bg-white/5 border-0 focus-visible:ring-1 focus-visible:ring-[#95ff00]/50"
+                      placeholder="Add variant..."
+                    />
+                    <Button
+                      type="button"
+                      onClick={() => handleVariantSelect(variantInput)}
+                      className="bg-[#95ff00]/10 hover:bg-[#95ff00]/20 text-[#95ff00] border-0"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  {showVariantSuggestions && variantSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 w-full z-50 mt-1">
+                      <div className="bg-black border border-white/10 rounded-md shadow-lg">
+                        {variantSuggestions.map((variant, index) => (
+                          <div
+                            key={index}
+                            onClick={() => handleVariantSelect(variant)}
+                            className="px-3 py-2 text-white hover:bg-white/5 cursor-pointer"
+                          >
+                            {variant}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {formData.variants?.map(variant => (

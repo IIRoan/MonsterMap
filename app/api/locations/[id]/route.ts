@@ -1,11 +1,5 @@
-import { createClient } from '@clickhouse/client';
 import { NextResponse } from 'next/server';
-
-const client = createClient({
-  url: process.env.CLICKHOUSE_HOST!,
-  username: process.env.CLICKHOUSE_USER!,
-  password: process.env.CLICKHOUSE_PASSWORD!
-});
+import sql from '@/lib/db';
 
 export async function PUT(
   request: Request,
@@ -14,81 +8,53 @@ export async function PUT(
   try {
     const locationId = params.id;
     const body = await request.json();
-    const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    const currentDate = new Date();
 
-    // Update location details
-    if (body.name || body.address || body.coordinates) {
-      await client.exec({
-        query: `
-          ALTER TABLE locations
-          UPDATE
-          name = if({name:String} != '', {name:String}, name),
-          address = if({address:String} != '', {address:String}, address),
-          latitude = if({latitude:Float64} != 0, {latitude:Float64}, latitude),
-          longitude = if({longitude:Float64} != 0, {longitude:Float64}, longitude)
-          WHERE location_id = {location_id:String}
-        `,
-        query_params: {
-          location_id: locationId,
-          name: body.name || '',
-          address: body.address || '',
-          latitude: body.coordinates?.[0] || 0,
-          longitude: body.coordinates?.[1] || 0
-        }
-      });
-    }
+    await sql.begin(async (sql) => {
+      if (body.name || body.address || body.coordinates) {
+        const latitude = body.coordinates?.[0] ? Number(body.coordinates[0]) : null;
+        const longitude = body.coordinates?.[1] ? Number(body.coordinates[1]) : null;
+        
+        await sql`
+          UPDATE locations
+          SET
+            name = COALESCE(NULLIF(${body.name || ''}, ''), name),
+            address = COALESCE(NULLIF(${body.address || ''}, ''), address),
+            latitude = COALESCE(${latitude}, latitude),
+            longitude = COALESCE(${longitude}, longitude)
+          WHERE location_id = ${locationId}
+        `;
+      }
 
-    // Handle variants updates if provided
-    if (Array.isArray(body.variants)) {
-      // Get existing variants
-      const existingVariantsResult = await client.query({
-        query: `
+      if (Array.isArray(body.variants)) {
+        const existingVariants = await sql<{ variant_name: string }[]>`
           SELECT variant_name
           FROM location_variants
-          WHERE location_id = {location_id:String}
-        `,
-        query_params: { location_id: locationId },
-        format: 'JSONEachRow'
-      });
+          WHERE location_id = ${locationId}
+        `;
+        
+        const existingVariantNames = existingVariants.map(v => v.variant_name);
+        const newVariants = body.variants.filter((v: string) => !existingVariantNames.includes(v));
+        const removedVariants = existingVariantNames.filter(v => !body.variants.includes(v));
 
-      const existingVariants = await existingVariantsResult.json();
-      const existingVariantNames = existingVariants.map((v: any) => v.variant_name);
+        for (const variant of newVariants) {
+          await sql`
+            INSERT INTO location_variants
+            (location_id, variant_name, first_reported_by, first_reported_at, last_confirmed_by, last_confirmed_at, confirmation_count)
+            VALUES
+            (${locationId}, ${variant}, 'anonymous', ${currentDate}, 'anonymous', ${currentDate}, 1)
+          `;
+        }
 
-      // Add new variants
-      const newVariants = body.variants.filter((v: string) => !existingVariantNames.includes(v));
-      for (const variant of newVariants) {
-        await client.insert({
-          table: 'location_variants',
-          values: [{
-            location_id: locationId,
-            variant_name: variant,
-            first_reported_by: 'anonymous',
-            first_reported_at: currentDate,
-            last_confirmed_by: 'anonymous',
-            last_confirmed_at: currentDate,
-            confirmation_count: 1
-          }],
-          format: 'JSONEachRow'
-        });
+        if (removedVariants.length > 0) {
+          await sql`
+            DELETE FROM location_variants
+            WHERE location_id = ${locationId}
+            AND variant_name = ANY(${removedVariants})
+          `;
+        }
       }
-
-      // Remove variants that are no longer present
-      const removedVariants = existingVariantNames.filter(v => !body.variants.includes(v));
-      for (const variant of removedVariants) {
-        await client.exec({
-          query: `
-            ALTER TABLE location_variants
-            DELETE WHERE
-            location_id = {location_id:String} AND
-            variant_name = {variant_name:String}
-          `,
-          query_params: {
-            location_id: locationId,
-            variant_name: variant
-          }
-        });
-      }
-    }
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

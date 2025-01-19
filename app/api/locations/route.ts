@@ -1,51 +1,31 @@
-import { createClient } from '@clickhouse/client';
 import { NextResponse } from 'next/server';
 import type { LocationResponse } from '@/types/Location';
-
-const client = createClient({
-  host: process.env.CLICKHOUSE_HOST!,
-  username: process.env.CLICKHOUSE_USER!,
-  password: process.env.CLICKHOUSE_PASSWORD!,
-});
+import sql from '@/lib/db';
 
 export async function GET() {
   try {
-    const result = await client.query({
-      query: `
-        WITH variant_arrays AS (
-          SELECT
-            l.location_id,
-            l.name,
-            l.address,
-            l.latitude,
-            l.longitude,
-            groupArray(DISTINCT lv.variant_name) as variants
-          FROM locations l
-          LEFT JOIN location_variants lv ON l.location_id = lv.location_id
-          GROUP BY
-            l.location_id,
-            l.name,
-            l.address,
-            l.latitude,
-            l.longitude
-        )
-        SELECT
-          location_id,
-          name,
-          address,
-          latitude,
-          longitude,
-          variants
-        FROM variant_arrays
-        ORDER BY name ASC
-      `,
-      format: 'JSONEachRow'
-    });
-   
-    const data = await result.json() as LocationResponse[];
-    return NextResponse.json(data);
+    const locations = await sql<LocationResponse[]>`
+      SELECT 
+        l.location_id,
+        l.name,
+        l.address,
+        l.latitude,
+        l.longitude,
+        ARRAY_AGG(DISTINCT lv.variant_name) as variants
+      FROM locations l
+      LEFT JOIN location_variants lv ON l.location_id = lv.location_id
+      GROUP BY
+        l.location_id,
+        l.name,
+        l.address,
+        l.latitude,
+        l.longitude
+      ORDER BY name ASC
+    `;
+
+    return NextResponse.json(locations);
   } catch (error) {
-    console.error('ClickHouse query error:', error);
+    console.error('PostgreSQL query error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch locations' },
       { status: 500 }
