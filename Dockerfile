@@ -1,7 +1,10 @@
 # Use alpine for an even smaller base image
 FROM node:18-alpine AS base
 
-# Enable pnpm with minimal env setup
+# Install necessary build tools
+RUN apk add --no-cache python3 make g++ gcc libc6-compat
+
+# Enable pnpm
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
@@ -10,8 +13,11 @@ RUN corepack enable
 FROM base AS deps
 WORKDIR /app
 
-# Only copy package files
-COPY package.json pnpm-lock.yaml ./
+# Add package manager field to package.json
+COPY package.json ./
+RUN npm pkg set packageManager="pnpm@9.15.4"
+
+COPY pnpm-lock.yaml ./
 
 # Install dependencies with specific flags to reduce size
 RUN pnpm install --frozen-lockfile \
@@ -23,6 +29,9 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Install SWC binary explicitly
+RUN pnpm add -D @next/swc-linux-x64-musl
 
 # Build with memory optimization flags
 ENV NODE_OPTIONS="--max-old-space-size=4096"
