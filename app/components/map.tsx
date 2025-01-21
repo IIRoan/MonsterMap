@@ -132,11 +132,11 @@ const Map = () => {
           }
 
           .leaflet-container {
-            background: rgba(0, 0, 0, 0.95);
+            background: rgba(0, 0, 0, 0.8);
           }
 
           .leaflet-tile {
-            filter: grayscale(100%) brightness(0.5);
+            filter: grayscale(100%) brightness(0.8);
           }
 
           .leaflet-control-attribution {
