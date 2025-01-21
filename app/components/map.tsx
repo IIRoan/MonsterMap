@@ -81,7 +81,7 @@ const Map = () => {
           >
             <Button
               variant="outline"
-              className="flex h-10 items-center gap-2 border-white/20 bg-black/90 px-4 text-sm text-[#95ff00] backdrop-blur-xl transition-all duration-300 hover:border-[#95ff00]/30 hover:bg-black/95 hover:shadow-lg hover:shadow-[#95ff00]/10 active:scale-[0.98] md:h-11 md:text-base"
+              className="flex h-10 items-center gap-2 border-white/20 bg-black/90 px-4 text-sm text-[#95ff00] backdrop-blur-xl transition-all duration-300 hover:border-[#95ff00]/30 hover:bg-black/95 hover:text-[#95ff00]/90 hover:shadow-lg hover:shadow-[#95ff00]/10 active:scale-[0.98] md:h-11 md:text-base"
               onClick={() => router.push('/submit')}
             >
               <Plus className="h-4 w-4" />
