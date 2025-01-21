@@ -117,7 +117,7 @@ importers:
         specifier: 8.5.1
         version: 8.5.1(react@18.3.1)
       framer-motion:
-        specifier: ^11.16.7
+        specifier: ^11.18.1
         version: 11.18.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       input-otp:
         specifier: 1.4.1

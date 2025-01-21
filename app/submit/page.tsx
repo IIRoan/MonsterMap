@@ -16,7 +16,6 @@ interface LocationSubmission {
   latitude: number;
   longitude: number;
   variants: string[];
-  submissionToken?: string;
 }
 
 interface ValidationErrors {
@@ -50,7 +49,6 @@ export default function SubmitLocation() {
   const [showVariantSuggestions, setShowVariantSuggestions] = useState(false);
   const [lastSubmissionTime, setLastSubmissionTime] = useState<number>(0);
   const [dailySubmissionCount, setDailySubmissionCount] = useState<number>(0);
-  const [submissionToken, setSubmissionToken] = useState<string>("");
 
   useEffect(() => {
     const storedLastSubmission = localStorage.getItem("lastSubmissionTime");
@@ -69,19 +67,7 @@ export default function SubmitLocation() {
     } else if (storedDailyCount) {
       setDailySubmissionCount(parseInt(storedDailyCount));
     }
-
-    fetchSubmissionToken();
   }, []);
-
-  const fetchSubmissionToken = async () => {
-    try {
-      const response = await fetch("/api/csrf-token");
-      const data = await response.json();
-      setSubmissionToken(data.token);
-    } catch (error) {
-      console.error("Failed to fetch CSRF token:", error);
-    }
-  };
 
   const sanitizeInput = (input: string): string => {
     return DOMPurify.sanitize(input.trim());
@@ -128,16 +114,12 @@ export default function SubmitLocation() {
       isValid = false;
     }
 
-    if (
-      formData.variants.length > MAX_VARIANTS
-    ) {
+    if (formData.variants.length > MAX_VARIANTS) {
       newErrors.general = `Maximum ${MAX_VARIANTS} variants allowed`;
       isValid = false;
     }
 
-    if (
-      formData.variants.some((variant) => variant.length > MAX_VARIANT_LENGTH)
-    ) {
+    if (formData.variants.some((variant) => variant.length > MAX_VARIANT_LENGTH)) {
       newErrors.general = `Variant names must be less than ${MAX_VARIANT_LENGTH} characters`;
       isValid = false;
     }
@@ -194,14 +176,12 @@ export default function SubmitLocation() {
         name: sanitizeInput(formData.name),
         address: sanitizeInput(formData.address),
         variants: formData.variants.map(sanitizeInput),
-        submissionToken,
       };
 
       const response = await fetch("/api/locations/submit", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "X-CSRF-Token": submissionToken,
         },
         body: JSON.stringify(sanitizedData),
       });
@@ -243,7 +223,8 @@ export default function SubmitLocation() {
       setShowVariantSuggestions(true);
     }
   };
-return (
+
+  return (
     <div className="min-h-screen bg-black bg-[radial-gradient(rgba(149,255,0,0.1)_1px,transparent_1px)] [background-size:20px_20px]">
       <div className="container mx-auto max-w-2xl py-12 relative">
         <Button
@@ -254,7 +235,7 @@ return (
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back
         </Button>
-        
+
         <AnimatePresence>
           {!submitted ? (
             <motion.div
@@ -292,11 +273,10 @@ return (
                             setErrors((prev) => ({ ...prev, name: undefined }));
                           }
                         }}
-                        className={`bg-white/5 border-0 focus-visible:ring-1 focus-visible:ring-[#95ff00]/50 focus-visible:ring-offset-0 ${
-                          errors.name
+                        className={`bg-white/5 border-0 focus-visible:ring-1 focus-visible:ring-[#95ff00]/50 focus-visible:ring-offset-0 ${errors.name
                             ? "border-red-500 ring-1 ring-red-500"
                             : ""
-                        }`}
+                          }`}
                       />
                       {errors.name && (
                         <p className="text-red-500 text-sm">{errors.name}</p>
@@ -427,8 +407,7 @@ return (
               </Card>
             </motion.div>
           ) : (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
+            <motion.div initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               className="flex flex-col items-center justify-center space-y-4"
             >
