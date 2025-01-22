@@ -136,7 +136,7 @@ const Map = () => {
           }
 
           .leaflet-tile {
-            filter: grayscale(100%) brightness(0.8);
+            filter: grayscale(100%) brightness(1.5);
           }
 
           .leaflet-control-attribution {
